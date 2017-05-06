@@ -104,7 +104,7 @@ class GameSpace(object):
 			pass
 
 		# send data to server here?
-		self.player.sendData('{"dummy": "' + str(self.player.id) + '"}')
+		self.player.sendData('{"sender": "' + str(self.player.id) + '"}')
 
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
