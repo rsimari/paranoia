@@ -12,15 +12,14 @@ class GameConnection(Protocol):
 	def __init__(self, _id, game):
 		self.id = _id
 		self.game = game
+		self.queue = DeferredQueue()
 
 	def connectionMade(self):
 		print "connected with game server"
-		#data = {"sender": self.id}
-		#self.transport.write(json.dumps(data))
 		self.game.start()
 
 	def dataReceived(self, data):
-		print data
+		self.queue.put(data)
 
 	def send(self, data):
 		self.transport.write(data)
@@ -79,15 +78,23 @@ class Player(object):
 	def __init__(self, game):
 		self.connection = None
 		self.game = game
-		#self.rect = pygame.Rect((0,0), (100, 100))
-		#charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
-		#charImage = pygame.transform.scale(charImage, self.rect.size)
-		#self.image = charImage.convert()
+		self.rect = pygame.Rect((0,0), (100, 100))
+		charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
+		charImage = pygame.transform.scale(charImage, self.rect.size)
+		self.image = charImage.convert()
 
 	def sendData(self, data):
 		print "sending..."
 		if self.connection != None:
 			self.connection.send(data)
+
+class Enemy(object):
+	def __init__(self, _id):
+		self.id = 2
+
+	def tick(data):
+		print "tick", data	
+
 
 # class for entire pygame Gamespace
 class GameSpace(object):
@@ -100,6 +107,7 @@ class GameSpace(object):
 		self.screen = pygame.display.set_mode(self.size)
 
 		self.game_objects = []
+		self.enemy = Enemy()
 		self.player = player
 
 	def update(self):
@@ -107,10 +115,13 @@ class GameSpace(object):
 		for event in pygame.event.get():
 			pass
 
-		print "2"
-		# send data to server here?
-		#self.player.sendData(json.dumps(data))
-		self.player.sendData('{"dummy": "' + str(self.player.connection.id) + '"}')
+		# send data to server
+		data = {"sender": str(self.player.connection.id)}
+		self.player.sendData(json.dumps(data))
+
+		# get data from server
+		self.player.connection.queue.get().addCallback(self.enemy.tick())
+
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
 			pass
