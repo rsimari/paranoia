@@ -9,6 +9,7 @@ class PlayerConnection(Protocol):
 	def __init__(self, port, init):
 		self.port = port
 		self.init_connection = init
+		self.queue = DeferredQueue()
 
 	def connectionMade(self):
 		print "player connection made"
