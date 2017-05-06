@@ -6,6 +6,7 @@ from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
+from twisted.internet.defer import DeferredQueue
 
 # connection for sending data for multiplayer game
 class GameConnection(Protocol):
@@ -78,22 +79,22 @@ class Player(object):
 	def __init__(self, game):
 		self.connection = None
 		self.game = game
-		self.rect = pygame.Rect((0,0), (100, 100))
-		charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
-		charImage = pygame.transform.scale(charImage, self.rect.size)
-		self.image = charImage.convert()
+		# self.rect = pygame.Rect((0,0), (100, 100))
+		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
+		# charImage = pygame.transform.scale(charImage, self.rect.size)
+		# self.image = charImage.convert()
 
 	def sendData(self, data):
-		print "sending..."
+		# print "sending..."
 		if self.connection != None:
 			self.connection.send(data)
 
 class Enemy(object):
-	def __init__(self, _id):
+	def __init__(self):
 		self.id = 2
 
 	def tick(data):
-		print "tick", data	
+		print "tick"	
 
 
 # class for entire pygame Gamespace
@@ -120,7 +121,7 @@ class GameSpace(object):
 		self.player.sendData(json.dumps(data))
 
 		# get data from server
-		self.player.connection.queue.get().addCallback(self.enemy.tick())
+		self.player.connection.queue.get().addCallback(self.enemy.tick)
 
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
