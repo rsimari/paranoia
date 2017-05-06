@@ -136,7 +136,7 @@ class Enemy(pygame.sprite.Sprite):
 	def __init__(self,  _id, rect = [0, 0]):
 		self.rect = pygame.Rect(tuple(rect), (100, 100))
 		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
-		self.image = pygame.image.load('/Users/rsimari/Desktop/Misc./UI demo/assets/floatticket.png')
+		self.image = pygame.image.load('deathstar.png')
 		self.id = _id
 
 	def move(self, data):
