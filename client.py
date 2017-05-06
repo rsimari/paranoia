@@ -22,16 +22,15 @@ class GameConnection(Protocol):
 
 	def joinGame(self, rect):
 		data = {"sender": str(self.id), "init": rect}
-		self.transport.write(json.dumps(data))
+		self.transport.write(json.dumps(data) + "____")
 
 	def dataReceived(self, data):
-		print data
+		print "rec: ", data
 		for d in data.split("____")[:-1]:
-			print json.loads(d)
 			self.queue.insert(0, json.loads(d))
 
 	def send(self, data):
-		self.transport.write(data)
+		self.transport.write(data + "____")
 
 class GameConnectionFactory(Factory):
 	def __init__(self, _id, game):
@@ -55,7 +54,6 @@ class InitConnection(Protocol):
 		print "established connection with server"
 
 	def dataReceived(self, data):
-		print data
 		data = json.loads(data)
 		# check if there was an open port to give me
 		try:
@@ -104,7 +102,7 @@ class Player(pygame.sprite.Sprite):
 
 	def sendData(self, data):
 		if self.connection != None:
-			self.connection.send(data)
+			self.connection.send(data + "____")
 
 	def move(self, key):
 		self.rect = list(self.rect)
@@ -175,11 +173,10 @@ class GameSpace(object):
 
 		# get data from server
 		for data in list(reversed(self.player.connection.queue)):
-			data = json.loads(data)
 			# add enemy in here if one joins
-			_id = data["sender"]
 			try:
 				rect = data["init"]
+				_id = data["sender"]
 				e = Enemy( _id, rect)
 				self.game_objects.append(e)
 				self.enemies[_id] = e
@@ -188,13 +185,20 @@ class GameSpace(object):
 
 			# update enemies
 			try:
+				_id = data["sender"]
 				self.enemies[_id].move(data)
 			except KeyError as e:
 				pass
 
-			# self.enemy.move(data)
-			# print self.player.connection.queue[0]
-			# print data
+			# received state from server
+			try:
+				state = data["state"]
+				for _id, pos in state.iteritems():
+					# moves enemy to position based on state sent from server
+					self.enemies[_id].rect = pos
+			except KeyError as e:
+				pass
+
 			self.player.connection.queue.pop()
 
 		# call tick() on each object that updates their data/location
