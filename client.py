@@ -95,7 +95,7 @@ class Player(pygame.sprite.Sprite):
 		self.game = game
 		self.rect = pygame.Rect((0,0), (100, 100))
 		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
-		self.image = pygame.image.load('/Users/rsimari/Desktop/Misc./UI demo/assets/floatticket.png')
+		self.image = pygame.image.load('deathstar.png')
 		# charImage = pygame.transform.scale(charImage, self.rect.size)
 		# self.image = charImage.convert()
 		self.id = 3
