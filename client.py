@@ -9,14 +9,17 @@ from twisted.internet import reactor
 
 # connection for sending data for multiplayer game
 class GameConnection(Protocol):
-	def __init__(self, _id):
+	def __init__(self, _id, game):
 		self.id = _id
+		self.game = game
 		pass
 
 	def connectionMade(self):
 		print "connected with game server"
-		data = {"sender": self.id}
-		self.transport.write(json.dumps(data))
+		#data = {"sender": self.id}
+		#self.transport.write(json.dumps(data))
+		self.game.start()
+
 
 	def dataReceived(self, data):
 		print json.loads(data)
@@ -25,8 +28,8 @@ class GameConnection(Protocol):
 		self.transport.write(data)
 
 class GameConnectionFactory(Factory):
-	def __init__(self, _id):
-		self.connection = GameConnection(_id)
+	def __init__(self, _id, game):
+		self.connection = GameConnection(_id, game)
 
 	def buildProtocol(self, addr):
 		return self.connection
@@ -52,7 +55,7 @@ class InitConnection(Protocol):
 			print "server is at max connections"
 			return 
 		# receives port to connect to and connects to that port for game data
-		conn = GameConnectionFactory(data["port"])
+		conn = GameConnectionFactory(data["port"], self.player.game)
 		self.player.connection = conn.connection
 		reactor.connectTCP("ash.campus.nd.edu", int(data["port"]), conn)
 
@@ -74,8 +77,13 @@ class InitConnectionFactory(Factory):
 
 
 class Player(object):
-	def __init__(self):
+	def __init__(self, game):
 		self.connection = None
+		self.game = game
+		#self.rect = pygame.Rect((0,0), (100, 100))
+		#charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
+		#charImage = pygame.transform.scale(charImage, self.rect.size)
+		#self.image = charImage.convert()
 
 	def sendData(self, data):
 		print "sending..."
@@ -103,9 +111,13 @@ class GameSpace(object):
 		for event in pygame.event.get():
 			pass
 
+		print "2"
 		# send data to server here?
-		self.player.sendData('{"dummy": "' + str(self.player.id) + '"}')
-
+		#self.player.sendData(json.dumps(data))
+		self.player.sendData('{"dummy": "' + str(self.player.connection.id) + '"}')
+		#self.player.sendData(
+		#print '{"dummy": "40123"}'
+		print "3"
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
 			pass
@@ -124,7 +136,7 @@ class GameSpace(object):
 class Game(object):
 	def __init__(self):
 		self.init_port = 40103
-		self.player = Player()
+		self.player = Player(self)
 
 	def start(self):
 		self.gs = GameSpace(self.player)
@@ -140,6 +152,6 @@ if __name__ == "__main__":
 	game = Game()
 
 	game.connect()
-	game.start()
+	#game.start()
 
 	reactor.run()
