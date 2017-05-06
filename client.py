@@ -13,7 +13,6 @@ class GameConnection(Protocol):
 	def __init__(self, _id, game):
 		self.id = _id
 		self.game = game
-		# self.queue = DeferredQueue()
 		self.queue = []
 
 	def connectionMade(self):
