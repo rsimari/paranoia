@@ -18,11 +18,16 @@ class GameConnection(Protocol):
 
 	def connectionMade(self):
 		print "connected with game server"
+		self.joinGame([100,100])
 		self.game.start()
+
+	def joinGame(self, rect):
+		data = {"sender": str(self.id), "init": rect}
+		self.transport.write(json.dumps(data))
 
 	def dataReceived(self, data):
 		for d in data.split("____")[:-1]:
-			self.queue.append(json.loads(d))
+			self.queue.insert(0, json.loads(d))
 
 	def send(self, data):
 		self.transport.write(data)
@@ -79,24 +84,63 @@ class InitConnectionFactory(Factory):
 		# quit program
 		os._exit(0)
 
+	def clientConnectionFailed(self, connector, reason):
+		print "could not connect to the server"
+		# quit program
+		os._exit(0)
 
+# the main players sprite
 class Player(pygame.sprite.Sprite):
 	def __init__(self, game):
 		self.connection = None
 		self.game = game
-		# self.rect = pygame.Rect((0,0), (100, 100))
+		self.rect = pygame.Rect((0,0), (100, 100))
 		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
+		self.image = pygame.image.load('/Users/rsimari/Desktop/Misc./UI demo/assets/floatticket.png')
 		# charImage = pygame.transform.scale(charImage, self.rect.size)
 		# self.image = charImage.convert()
+		self.id = 3
 
 	def sendData(self, data):
-		# print "sending..."
 		if self.connection != None:
 			self.connection.send(data)
 
+	def move(self, key):
+		self.rect = list(self.rect)
+
+		data = {"sender": str(self.connection.id)}
+		if key == pygame.K_d:
+			data["dx"] = 5
+			self.rect[0] += 5
+			self.sendData(json.dumps(data))
+		elif key == pygame.K_a:
+			data["dx"] = -5
+			self.rect[0] -= 5
+			self.sendData(json.dumps(data))
+		elif key == pygame.K_w:
+			data["dy"] = -5
+			self.rect[1] -= 5
+			self.sendData(json.dumps(data))
+		elif key == pygame.K_s:
+			data["dy"] = 5
+			self.rect[1] += 5
+			self.sendData(json.dumps(data))
+
+		self.rect = tuple(self.rect)
+
+	def tick(self):
+		pass
+
+# other player's sprite
 class Enemy(pygame.sprite.Sprite):
-	def __init__(self):
+	def __init__(self, rect = [0, 0]):
+		self.rect = pygame.Rect(tuple(rect), (100, 100))
+		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
+		self.image = pygame.image.load('/Users/rsimari/Desktop/Misc./UI demo/assets/floatticket.png')
 		self.id = 2
+
+	def move(self, data):
+		print data
 
 	def tick(self, data):
 		print "tick"	
@@ -113,22 +157,30 @@ class GameSpace(object):
 		self.screen = pygame.display.set_mode(self.size)
 
 		self.game_objects = []
-		self.enemy = Enemy()
 		self.player = player
+		self.game_objects.append(self.player)
 
 	def update(self):
 		# capture pygame events 
 		for event in pygame.event.get():
-			pass
-
-		# send data to server
-		data = {"sender": str(self.player.connection.id)}
-		self.player.sendData(json.dumps(data))
+			if event.type == pygame.KEYDOWN:
+				self.player.move(event.key)
 
 		# get data from server
-		for data in self.player.connection.queue:
-			self.enemy.tick(data)
-			self.player.connection.queue.remove(data)
+		for data in list(reversed(self.player.connection.queue)):
+			data = json.loads(data)
+			# add enemy in here if one joins
+			try:
+				rect = data["init"]
+				e = Enemy(rect)
+				self.game_objects.append(e)
+			except KeyError as e:
+				pass
+
+			# self.enemy.move(data)
+			# print self.player.connection.queue[0]
+			# print data
+			self.player.connection.queue.pop()
 
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
@@ -140,8 +192,9 @@ class GameSpace(object):
 
 		# draw all objects with new data/location
 		for obj in self.game_objects:
-			pass
-			# self.screen.blit(obj.image, obj.rect)
+			if obj.id == 2:
+				print "hi"
+			self.screen.blit(obj.image, obj.rect)
 
 		pygame.display.flip()
 
@@ -161,8 +214,6 @@ class Game(object):
 
 if __name__ == "__main__":
 	game = Game()
-
 	game.connect()
-	#game.start()
 
 	reactor.run()
