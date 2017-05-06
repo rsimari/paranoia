@@ -14,6 +14,7 @@ class PlayerConnection(Protocol):
 		print "player connection made"
 
 	def dataReceived(self, data):
+		print data
 		self.init_connection.conn_controller.broadcast(data)
 
 	def connectionLost(self, reason):
