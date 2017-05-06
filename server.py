@@ -41,6 +41,7 @@ class PlayerConnectionController(object):
 		self.ports = []
 
 	def addConnection(self, conn):
+		print "added"
 		self.conn_in_use.append(conn)
 
 	def removeConnection(self, conn):
@@ -59,12 +60,14 @@ class PlayerConnectionController(object):
 			data = data.split("}")
 			for d in data[:-1]:
 				d = d + "}"
-				print d
 				decoded_data = json.loads(d)
 				for conn in self.conn_in_use:
 					try:
 						if conn.port != int(decoded_data["sender"]):
-							conn.transport.write(json.dumps(d))
+							try:
+								conn.transport.write(json.dumps(d) + "____")
+							except AttributeError as e:
+								print e
 					except KeyError as e:
 						print e
 
