@@ -110,20 +110,20 @@ class Player(pygame.sprite.Sprite):
 
 		data = {"sender": str(self.connection.id)}
 		if key == pygame.K_d:
-			data["dx"] = 5
 			self.rect[0] += 5
+			data["position"] = self.rect
 			self.sendData(json.dumps(data))
 		elif key == pygame.K_a:
-			data["dx"] = -5
 			self.rect[0] -= 5
+			data["position"] = self.rect
 			self.sendData(json.dumps(data))
 		elif key == pygame.K_w:
-			data["dy"] = -5
 			self.rect[1] -= 5
+			data["position"] = self.rect
 			self.sendData(json.dumps(data))
 		elif key == pygame.K_s:
-			data["dy"] = 5
 			self.rect[1] += 5
+			data["position"] = self.rect
 			self.sendData(json.dumps(data))
 
 		self.rect = tuple(self.rect)
@@ -133,14 +133,19 @@ class Player(pygame.sprite.Sprite):
 
 # other player's sprite
 class Enemy(pygame.sprite.Sprite):
-	def __init__(self, rect = [0, 0]):
+	def __init__(self,  _id, rect = [0, 0]):
 		self.rect = pygame.Rect(tuple(rect), (100, 100))
 		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
 		self.image = pygame.image.load('/Users/rsimari/Desktop/Misc./UI demo/assets/floatticket.png')
-		self.id = 2
+		self.id = _id
 
 	def move(self, data):
-		print data
+		try:
+			pos = data["position"]
+			self.rect = tuple(pos)
+		except KeyError as e:
+			pass
+
 
 	def tick(self, data):
 		print "tick"	
@@ -159,6 +164,7 @@ class GameSpace(object):
 		self.game_objects = []
 		self.player = player
 		self.game_objects.append(self.player)
+		self.enemies = {}
 
 	def update(self):
 		# capture pygame events 
@@ -170,10 +176,18 @@ class GameSpace(object):
 		for data in list(reversed(self.player.connection.queue)):
 			data = json.loads(data)
 			# add enemy in here if one joins
+			_id = data["sender"]
 			try:
 				rect = data["init"]
-				e = Enemy(rect)
+				e = Enemy( _id, rect)
 				self.game_objects.append(e)
+				self.enemies[_id] = e
+			except KeyError as e:
+				pass
+
+			# update enemies
+			try:
+				self.enemies[_id].move(data)
 			except KeyError as e:
 				pass
 
