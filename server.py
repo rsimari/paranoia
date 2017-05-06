@@ -14,7 +14,6 @@ class PlayerConnection(Protocol):
 		print "player connection made"
 
 	def dataReceived(self, data):
-		print data
 		self.init_connection.conn_controller.broadcast(data)
 
 	def connectionLost(self, reason):
@@ -57,13 +56,17 @@ class PlayerConnectionController(object):
 		self.ports.append(port)
 
 	def broadcast(self, data):
-		decoded_data = json.loads(data)
-		for conn in self.conn_in_use:
-			try:
-				if conn.port != int(decoded_data["sender"]):
-					conn.transport.write(data)
-			except KeyError as e:
-					print e
+			data = data.split("}")
+			for d in data[:-1]:
+				d = d + "}"
+				print d
+				decoded_data = json.loads(d)
+				for conn in self.conn_in_use:
+					try:
+						if conn.port != int(decoded_data["sender"]):
+							conn.transport.write(json.dumps(d))
+					except KeyError as e:
+						print e
 
 class InitConnection(Protocol):
 	def __init__(self):
