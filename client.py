@@ -13,14 +13,16 @@ class GameConnection(Protocol):
 	def __init__(self, _id, game):
 		self.id = _id
 		self.game = game
-		self.queue = DeferredQueue()
+		# self.queue = DeferredQueue()
+		self.queue = []
 
 	def connectionMade(self):
 		print "connected with game server"
 		self.game.start()
 
 	def dataReceived(self, data):
-		self.queue.put(data)
+		for d in data.split("____")[:-1]:
+			self.queue.append(json.loads(d))
 
 	def send(self, data):
 		self.transport.write(data)
@@ -50,9 +52,12 @@ class InitConnection(Protocol):
 		print data
 		data = json.loads(data)
 		# check if there was an open port to give me
-		if data["port"] == "-1":
-			print "server is at max connections"
-			return 
+		try:
+			if data["port"] == "-1":
+				print "server is at max connections"
+				return 
+		except KeyError as e:
+			pass
 		# receives port to connect to and connects to that port for game data
 		conn = GameConnectionFactory(data["port"], self.player.game)
 		self.player.connection = conn.connection
@@ -75,26 +80,26 @@ class InitConnectionFactory(Factory):
 		os._exit(0)
 
 
-class Player(object):
+class Player(pygame.sprite.Sprite):
 	def __init__(self, game):
 		self.connection = None
 		self.game = game
-		#self.rect = pygame.Rect((0,0), (100, 100))
-		#charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
-		#charImage = pygame.transform.scale(charImage, self.rect.size)
-		#self.image = charImage.convert()
+		# self.rect = pygame.Rect((0,0), (100, 100))
+		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
+		# charImage = pygame.transform.scale(charImage, self.rect.size)
+		# self.image = charImage.convert()
 
 	def sendData(self, data):
-		print "sending..."
+		# print "sending..."
 		if self.connection != None:
 			self.connection.send(data)
 
-class Enemy(object):
+class Enemy(pygame.sprite.Sprite):
 	def __init__(self):
 		self.id = 2
 
-	def tick(data):
-		print "tick", data	
+	def tick(self, data):
+		print "tick"	
 
 
 # class for entire pygame Gamespace
@@ -121,7 +126,9 @@ class GameSpace(object):
 		self.player.sendData(json.dumps(data))
 
 		# get data from server
-		self.player.connection.queue.get().addCallback(self.enemy.tick())
+		for data in self.player.connection.queue:
+			self.enemy.tick(data)
+			self.player.connection.queue.remove(data)
 
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
