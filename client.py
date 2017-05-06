@@ -17,7 +17,7 @@ class GameConnection(Protocol):
 
 	def connectionMade(self):
 		print "connected with game server"
-		self.joinGame([100,100])
+		self.joinGame([0,0])
 		self.game.start()
 
 	def joinGame(self, rect):
@@ -27,7 +27,13 @@ class GameConnection(Protocol):
 	def dataReceived(self, data):
 		print "rec: ", data
 		for d in data.split("____")[:-1]:
-			self.queue.insert(0, json.loads(d))
+			d = json.loads(d)
+			try:
+				if d["sender"] != self.id:
+					self.queue.insert(0, d)
+			except KeyError as e:
+				self.queue.insert(0, d)
+
 
 	def send(self, data):
 		self.transport.write(data + "____")
@@ -65,7 +71,8 @@ class InitConnection(Protocol):
 		# receives port to connect to and connects to that port for game data
 		conn = GameConnectionFactory(data["port"], self.player.game)
 		self.player.connection = conn.connection
-		reactor.connectTCP("ash.campus.nd.edu", int(data["port"]), conn)
+		# reactor.connectTCP("ash.campus.nd.edu", int(data["port"]), conn)
+		reactor.connectTCP("localhost", int(data["port"]), conn)
 
 class InitConnectionFactory(Factory):
 	def __init__(self, player):
@@ -133,7 +140,7 @@ class Player(pygame.sprite.Sprite):
 # other player's sprite
 class Enemy(pygame.sprite.Sprite):
 	def __init__(self,  _id, rect = [0, 0]):
-		self.rect = pygame.Rect(tuple(rect), (100, 100))
+		self.rect = pygame.Rect(tuple(rect[:2]), (100, 100))
 		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
 		self.image = pygame.image.load('deathstar.png')
 		self.id = _id
@@ -173,16 +180,6 @@ class GameSpace(object):
 
 		# get data from server
 		for data in list(reversed(self.player.connection.queue)):
-			# add enemy in here if one joins
-			try:
-				rect = data["init"]
-				_id = data["sender"]
-				e = Enemy( _id, rect)
-				self.game_objects.append(e)
-				self.enemies[_id] = e
-			except KeyError as e:
-				pass
-
 			# update enemies
 			try:
 				_id = data["sender"]
@@ -193,9 +190,16 @@ class GameSpace(object):
 			# received state from server
 			try:
 				state = data["state"]
+				print state
 				for _id, pos in state.iteritems():
-					# moves enemy to position based on state sent from server
-					self.enemies[_id].rect = pos
+					if _id in self.enemies and _id is not self.player.connection.id:
+						# moves enemy to position based on state sent from server
+						self.enemies[_id].rect = pos
+					elif _id != self.player.connection.id:
+						print "make enemy"
+						e = Enemy(_id, pos)
+						self.enemies[_id] = e
+						self.game_objects.append(e)
 			except KeyError as e:
 				pass
 
@@ -211,8 +215,6 @@ class GameSpace(object):
 
 		# draw all objects with new data/location
 		for obj in self.game_objects:
-			if obj.id == 2:
-				print "hi"
 			self.screen.blit(obj.image, obj.rect)
 
 		pygame.display.flip()
@@ -228,7 +230,8 @@ class Game(object):
 		lc.start(0.0166)
 
 	def connect(self):
-		reactor.connectTCP("ash.campus.nd.edu", self.init_port, InitConnectionFactory(self.player))
+		reactor.connectTCP("localhost", self.init_port, InitConnectionFactory(self.player))
+		# reactor.connectTCP("ash.campus.nd.edu", self.init_port, InitConnectionFactory(self.player))
 
 
 if __name__ == "__main__":
