@@ -11,15 +11,16 @@ from twisted.internet import reactor
 class GameConnection(Protocol):
 	def __init__(self, _id):
 		self.id = _id
-		pass
+		self.game = game
 
 	def connectionMade(self):
 		print "connected with game server"
 		data = {"sender": self.id}
 		self.transport.write(json.dumps(data))
+		self.game.start()
 
 	def dataReceived(self, data):
-		print json.loads(data)
+		print data
 
 	def send(self, data):
 		self.transport.write(data)
@@ -46,6 +47,7 @@ class InitConnection(Protocol):
 		print "established connection with server"
 
 	def dataReceived(self, data):
+		print data
 		data = json.loads(data)
 		# check if there was an open port to give me
 		if data["port"] == "-1":
@@ -92,19 +94,17 @@ class GameSpace(object):
 		self.black = 0, 0, 0
 		self.screen = pygame.display.set_mode(self.size)
 
-		self.clock = pygame.time.Clock()
-
 		self.game_objects = []
 		self.player = player
 
 	def update(self):
-		print "here" 
 		# capture pygame events 
 		for event in pygame.event.get():
 			pass
 
 		# send data to server here?
-		self.player.sendData('{"dummy": "' + str(self.player.id) + '"}')
+		print "here" 
+		self.player.sendData('{"sender": "' + str(self.player.id) + '"}')
 
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
@@ -128,7 +128,6 @@ class Game(object):
 
 	def start(self):
 		self.gs = GameSpace(self.player)
-		print "hi"
 		lc = LoopingCall(self.gs.update)
 		lc.start(0.0166)
 
