@@ -14,7 +14,29 @@ class PlayerConnection(Protocol):
 		print "player connection made"
 
 	def dataReceived(self, data):
-		self.init_connection.conn_controller.broadcast(data)
+		print "original: ", data
+		data_set = data.split("____")
+		print data_set
+		for data in data_set[:-1]:
+			if len(data) > 1:
+				data = json.loads(data)
+				_id = data["sender"]
+				try:
+					# new player
+					pos = data["init"]
+					self.init_connection.conn_controller.addPlayer(_id, pos)
+					self.init_connection.conn_controller.broadcastState()
+				except KeyError as e:
+					pass	
+
+				try:
+					# player got updated
+					pos = data["position"]
+					self.init_connection.conn_controller.updatePlayer(_id, pos)
+				except KeyError as e:
+					pass
+				# broadcasts changes to clients	
+				self.init_connection.conn_controller.broadcast(data)
 
 	def connectionLost(self, reason):
 		# release port
@@ -39,6 +61,8 @@ class PlayerConnectionController(object):
 	def __init__(self):
 		self.conn_in_use = []
 		self.ports = []
+		self.player_pos = {}
+		self.state = {"state": self.player_pos}
 
 	def addConnection(self, conn):
 		print "added"
@@ -46,6 +70,15 @@ class PlayerConnectionController(object):
 
 	def removeConnection(self, conn):
 		self.conn_in_use.remove(conn)
+
+	def addPlayer(self, port, position):
+		self.player_pos[port] = position
+
+	def updatePlayer(self, port, position):
+		self.player_pos[port] = position
+
+	def removePlayer(self, port):
+		del self.player_pos[port]
 
 	def stopListeningPort(self, port_num):
 		for port in self.ports:
@@ -56,20 +89,21 @@ class PlayerConnectionController(object):
 	def newListeningPort(self, port):
 		self.ports.append(port)
 
-	def broadcast(self, data):
-			data = data.split("}")
-			for d in data[:-1]:
-				d = d + "}"
-				decoded_data = json.loads(d)
-				for conn in self.conn_in_use:
-					try:
-						if conn.port != int(decoded_data["sender"]):
-							try:
-								conn.transport.write(json.dumps(d) + "____")
-							except AttributeError as e:
-								print e
-					except KeyError as e:
-						print e
+	def broadcast(self, decoded_data):
+			for conn in self.conn_in_use:
+				try:
+					if conn.port != int(decoded_data["sender"]):
+						try:
+							conn.transport.write(json.dumps(decoded_data) + "____")
+						except AttributeError as e:
+							print e
+				except KeyError as e:
+					print e
+
+	def broadcastState(self):
+			print "broadcast state..."
+			for conn in self.conn_in_use:
+				conn.transport.write(json.dumps(self.state) + "____")
 
 class InitConnection(Protocol):
 	def __init__(self):
