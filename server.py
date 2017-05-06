@@ -39,10 +39,16 @@ class PlayerConnection(Protocol):
 				self.init_connection.conn_controller.broadcast(data)
 
 	def connectionLost(self, reason):
-		# release port
+		# send client data so they know to delete the sprite from this player
+		data = {"sender": self.port, "del": self.port}
+		self.init_connection.conn_controller.broadcast(data)
+		# release port and remove player from game
 		print "lost player connection"
+		# make port available again
 		self.init_connection.available_ports.append(self.port)
+		# remove connection from list of connections
 		self.init_connection.conn_controller.removeConnection(self)
+		# drop connection on this side
 		self.transport.loseConnection()
 		self.init_connection.conn_controller.stopListeningPort(self.port)
 
@@ -101,9 +107,9 @@ class PlayerConnectionController(object):
 					print e
 
 	def broadcastState(self):
-			print "broadcast state..."
-			for conn in self.conn_in_use:
-				conn.transport.write(json.dumps(self.state) + "____")
+		print "broadcast state..."
+		for conn in self.conn_in_use:
+			conn.transport.write(json.dumps(self.state) + "____")
 
 class InitConnection(Protocol):
 	def __init__(self):

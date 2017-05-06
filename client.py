@@ -25,7 +25,7 @@ class GameConnection(Protocol):
 		self.transport.write(json.dumps(data) + "____")
 
 	def dataReceived(self, data):
-		print "rec: ", data
+		# print "rec: ", data
 		for d in data.split("____")[:-1]:
 			d = json.loads(d)
 			try:
@@ -98,6 +98,7 @@ class InitConnectionFactory(Factory):
 # the main players sprite
 class Player(pygame.sprite.Sprite):
 	def __init__(self, game):
+		pygame.sprite.Sprite.__init__(self)
 		self.connection = None
 		self.game = game
 		self.rect = pygame.Rect((0,0), (100, 100))
@@ -140,6 +141,7 @@ class Player(pygame.sprite.Sprite):
 # other player's sprite
 class Enemy(pygame.sprite.Sprite):
 	def __init__(self,  _id, rect = [0, 0]):
+		pygame.sprite.Sprite.__init__(self)
 		self.rect = pygame.Rect(tuple(rect[:2]), (100, 100))
 		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
 		self.image = pygame.image.load('deathstar.png')
@@ -182,10 +184,19 @@ class GameSpace(object):
 		for data in list(reversed(self.player.connection.queue)):
 			# update enemies
 			try:
-				_id = data["sender"]
+				_id = data['sender']
 				self.enemies[_id].move(data)
+			except Exception as e:
+				print e
+
+			# see if any player left from game and remove them from our screen
+			try:
+				_id = data["del"]
+				e = self.enemies[str(_id)]
+				self.game_objects.remove(e)
+				del self.enemies[str(_id)]
 			except KeyError as e:
-				pass
+				print 'Error', e
 
 			# received state from server
 			try:
@@ -196,13 +207,11 @@ class GameSpace(object):
 						# moves enemy to position based on state sent from server
 						self.enemies[_id].rect = pos
 					elif _id != self.player.connection.id:
-						print "make enemy"
 						e = Enemy(_id, pos)
 						self.enemies[_id] = e
 						self.game_objects.append(e)
 			except KeyError as e:
 				pass
-
 			self.player.connection.queue.pop()
 
 		# call tick() on each object that updates their data/location
