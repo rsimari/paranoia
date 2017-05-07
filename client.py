@@ -26,15 +26,20 @@ class GameConnection(Protocol):
 		height = 500
 		print "PLAYER: ", self.player.player_num
 
-		if self.player.player_num == 1:
+		if self.player.player_num == "1":
+			self.player.rect.center = (50, 50)
 			self.joinGame([50, 50])
-		elif self.player.player_num == 2:
+		elif self.player.player_num == "2":
+			self.player.rect.center = (width - 50, height - 50)
 			self.joinGame([width - 50, height - 50])
-		elif self.player.player_num == 3:
+		elif self.player.player_num == "3":
+			self.player.rect.center = (width - 50, 50)
 			self.joinGame([width - 50, 50])
-		elif self.player.player_num == 4:
+		elif self.player.player_num == "4":
+			self.player.rect.center = (50, height - 50)
 			self.joinGame([50, height - 50])
 		else: 
+			self.player.rect.center = (width/2, height/2)
 			self.joinGame([width/2, height/2])
 
 		self.game.start(width, height)
