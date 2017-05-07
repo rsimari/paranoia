@@ -22,18 +22,23 @@ class GameConnection(Protocol):
 
 	def connectionMade(self):
 		print "connected with game server"
+		width = 800
+		height = 500
+		print "PLAYER: ", self.player.player_num
+
 		if self.player.player_num == 1:
 			self.joinGame([50, 50])
 		elif self.player.player_num == 2:
-			self.joinGame([self.game.gs.width - 50, self.game.gs.height - 50])
+			self.joinGame([width - 50, height - 50])
 		elif self.player.player_num == 3:
-			self.joinGame([self.game.gs.width - 50, 50])
-		elif self.player.player_num == 3:
-			self.joinGame([50, self.game.gs.height - 50])
+			self.joinGame([width - 50, 50])
+		elif self.player.player_num == 4:
+			self.joinGame([50, height - 50])
 		else: 
-			self.joinGame([self.game.gs.width/2, self.game.gs.height/2])
+			self.joinGame([width/2, height/2])
 
-		self.game.start()
+		self.game.start(width, height)
+
 
 	def joinGame(self, rect):
 		data = {"sender": str(self.id), "init": rect}
@@ -119,7 +124,7 @@ class Player(pygame.sprite.Sprite):
 		self.gs = gs
 		self.game = game
 		self.health = 100
-		self.player_num
+		self.player_num = 0
 		self.rect = pygame.Rect(pos, (100, 100))
 		self.rect.center = pos
 		self.image = pygame.image.load('deathstar.png')
@@ -240,10 +245,10 @@ class EnemyLaser(pygame.sprite.Sprite):
 
 # class for entire pygame Gamespace
 class GameSpace(object):
-	def __init__(self, player):
+	def __init__(self, player, width, height):
 		pygame.init()
 		# set size of window for game
-		self.size = self.width, self.height = 800, 500
+		self.size = self.width, self.height = width, height
 		# set clear color
 		self.black = 0, 0, 0
 		self.screen = pygame.display.set_mode(self.size)
@@ -329,8 +334,8 @@ class Game(object):
 		self.gs = None
 		self.player = Player(self, self.gs)
 
-	def start(self):
-		self.gs = GameSpace(self.player)
+	def start(self, width, height):
+		self.gs = GameSpace(self.player, width, height)
 		self.player.gs = self.gs
 		pygame.key.set_repeat(1, 10)
 		lc = LoopingCall(self.gs.update)
