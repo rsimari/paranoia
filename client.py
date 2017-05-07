@@ -130,9 +130,10 @@ class Player(pygame.sprite.Sprite):
 		self.game = game
 		self.health = 100
 		self.player_num = 0
-		self.rect = pygame.Rect(pos, (100, 100))
+		self.rect = pygame.Rect(pos, (75, 50))
 		self.rect.center = pos
-		self.image = pygame.image.load('deathstar.png')
+		self.image = pygame.image.load('jet.png')
+		self.image = pygame.transform.scale(self.image, self.rect.size)
 		self.lasers = []
 
 	def sendData(self, data):
@@ -190,7 +191,7 @@ class Enemy(pygame.sprite.Sprite):
 		pygame.sprite.Sprite.__init__(self)
 		self.rect = pygame.Rect((rect[0], rect[1]), (100, 100))
 		self.rect.center = tuple(rect)
-		self.image = pygame.image.load('deathstar.png')
+		self.image = pygame.image.load('jet.png')
 		self.id = _id
 
 	def move(self, data):
