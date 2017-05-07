@@ -25,7 +25,6 @@ class GameConnection(Protocol):
 		self.transport.write(json.dumps(data) + "____")
 
 	def dataReceived(self, data):
-		# print "rec: ", data
 		for d in data.split("____")[:-1]:
 			d = json.loads(d)
 			try:
@@ -97,16 +96,13 @@ class InitConnectionFactory(Factory):
 
 # the main players sprite
 class Player(pygame.sprite.Sprite):
-	def __init__(self, game):
+	def __init__(self, game, pos = (0, 0)):
 		pygame.sprite.Sprite.__init__(self)
 		self.connection = None
 		self.game = game
-		self.rect = pygame.Rect((0,0), (100, 100))
-		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
+		self.rect = pygame.Rect(pos, (100, 100))
 		self.image = pygame.image.load('deathstar.png')
-		# charImage = pygame.transform.scale(charImage, self.rect.size)
-		# self.image = charImage.convert()
-		self.id = 3
+		self.lasers = []
 
 	def sendData(self, data):
 		if self.connection != None:
@@ -135,6 +131,16 @@ class Player(pygame.sprite.Sprite):
 
 		self.rect = tuple(self.rect)
 
+	def fire(self, pos, dx, dy):
+		print "firing laser..."
+		data = {"sender": str(self.connection.id), "laser": [pos[0], pos[1], dx, dy]}
+		self.sendData(json.dumps(data))
+
+		laser = Laser(pos[:2], dx, dy)
+		self.lasers.append(laser)
+		return laser
+
+
 	def tick(self):
 		pass
 
@@ -143,7 +149,6 @@ class Enemy(pygame.sprite.Sprite):
 	def __init__(self,  _id, rect = [0, 0]):
 		pygame.sprite.Sprite.__init__(self)
 		self.rect = pygame.Rect(tuple(rect[:2]), (100, 100))
-		# charImage = pygame.image.load('/home/scratch/paradigms/deathstar/deathstar.png')
 		self.image = pygame.image.load('deathstar.png')
 		self.id = _id
 
@@ -154,10 +159,22 @@ class Enemy(pygame.sprite.Sprite):
 		except KeyError as e:
 			pass
 
+	def tick(self):
+		pass
 
-	def tick(self, data):
-		print "tick"	
+# laser objects that get shot from players
+class Laser(pygame.sprite.Sprite):
+	def __init__(self, rect, dx, dy):
+		pygame.sprite.Sprite.__init__(self)
+		self.rect = pygame.Rect(tuple(rect[:2]), (10, 10))
+		self.image = pygame.image.load('deathstar.png')
 
+		self.dx = dx
+		self.dy = dy
+
+	def tick(self):
+		self.rect[0] += dx
+		self.rect[1] += dy
 
 # class for entire pygame Gamespace
 class GameSpace(object):
@@ -178,16 +195,23 @@ class GameSpace(object):
 		# capture pygame events 
 		for event in pygame.event.get():
 			if event.type == pygame.KEYDOWN:
-				self.player.move(event.key)
+				if event.key == pygame.K_SPACE:
+					# player fires laser
+					# (x, y), dx, dy
+					laser = self.player.fire((0,0), 1, 1)
+					self.game_objects.append(laser)
+				else:
+					self.player.move(event.key)
 
 		# get data from server
 		for data in list(reversed(self.player.connection.queue)):
+			print data
 			# update enemies
 			try:
 				_id = data['sender']
 				self.enemies[_id].move(data)
 			except Exception as e:
-				print e
+				pass
 
 			# see if any player left from game and remove them from our screen
 			try:
@@ -196,7 +220,7 @@ class GameSpace(object):
 				self.game_objects.remove(e)
 				del self.enemies[str(_id)]
 			except KeyError as e:
-				print 'Error', e
+				pass
 
 			# received state from server
 			try:
@@ -214,10 +238,12 @@ class GameSpace(object):
 				pass
 			self.player.connection.queue.pop()
 
+			# receive laser fire from server
+
+
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
-			pass
-			# obj.tick()
+			obj.tick()
 
 		# clear screen
 		self.screen.fill(self.black)

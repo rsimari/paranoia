@@ -14,7 +14,6 @@ class PlayerConnection(Protocol):
 		print "player connection made"
 
 	def dataReceived(self, data):
-		print "original: ", data
 		data_set = data.split("____")
 		print data_set
 		for data in data_set[:-1]:
@@ -36,6 +35,7 @@ class PlayerConnection(Protocol):
 				except KeyError as e:
 					pass
 				# broadcasts changes to clients	
+				print data
 				self.init_connection.conn_controller.broadcast(data)
 
 	def connectionLost(self, reason):
@@ -71,7 +71,7 @@ class PlayerConnectionController(object):
 		self.state = {"state": self.player_pos}
 
 	def addConnection(self, conn):
-		print "added"
+		print "player added"
 		self.conn_in_use.append(conn)
 
 	def removeConnection(self, conn):
@@ -96,15 +96,15 @@ class PlayerConnectionController(object):
 		self.ports.append(port)
 
 	def broadcast(self, decoded_data):
-			for conn in self.conn_in_use:
-				try:
-					if conn.port != int(decoded_data["sender"]):
-						try:
-							conn.transport.write(json.dumps(decoded_data) + "____")
-						except AttributeError as e:
-							print e
-				except KeyError as e:
-					print e
+		for conn in self.conn_in_use:
+			try:
+				if conn.port != int(decoded_data["sender"]):
+					try:
+						conn.transport.write(json.dumps(decoded_data) + "____")
+					except AttributeError as e:
+						print e
+			except KeyError as e:
+				print e
 
 	def broadcastState(self):
 		print "broadcast state..."
