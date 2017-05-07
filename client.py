@@ -116,7 +116,7 @@ class Player(pygame.sprite.Sprite):
 	def move(self, key):
 
 		data = {"sender": str(self.connection.id)}
-		print "REKT", self.rect
+
 		if key == pygame.K_d:
 			self.rect.centerx += 5
 			data["position"] = [self.rect.centerx, self.rect.centery]
@@ -134,13 +134,11 @@ class Player(pygame.sprite.Sprite):
 			data["position"] = [self.rect.centerx, self.rect.centery]
 			self.sendData(json.dumps(data))
 
-		self.rect = tuple(self.rect)
-
 	def fire(self, x, y):
 		print "firing laser..."
 		mouse_pos = pygame.mouse.get_pos()
-		opp = mouse_pos[1] - (self.rect.centery + 50)
-		adj = mouse_pos[0] - (self.rect.centerx + 50)
+		opp = mouse_pos[1] - self.rect.centery
+		adj = mouse_pos[0] - self.rect.centerx
 		angle = math.atan2(opp, adj)
 		dx = math.cos(angle)
 		dy = math.sin(angle)
@@ -204,11 +202,11 @@ class EnemyLaser(pygame.sprite.Sprite):
 	def tick(self):
 		self.rect.centerx += (self.speed * self.dx)
 		self.rect.centery += (self.speed * self.dy)
+		
 		# detect collision
 		if self.rect.colliderect(self.target.rect):
-			print "got it"
-			# print self.target.health
-			# self.target.health -= 50
+			print self.target.health
+			self.target.health -= 50
 
 # class for entire pygame Gamespace
 class GameSpace(object):
@@ -229,7 +227,6 @@ class GameSpace(object):
 		# capture pygame events 
 		for event in pygame.event.get():
 			if event.type == pygame.KEYDOWN:
-				print self.player.rect
 				self.player.move(event.key)
 			elif event.type == pygame.MOUSEBUTTONDOWN:
 				# player fires laser
