@@ -1,6 +1,7 @@
 import pygame
 import os
 import json
+import math
 
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol
@@ -100,6 +101,7 @@ class Player(pygame.sprite.Sprite):
 		pygame.sprite.Sprite.__init__(self)
 		self.connection = None
 		self.game = game
+		self.health = 100
 		self.rect = pygame.Rect(pos, (100, 100))
 		self.image = pygame.image.load('deathstar.png')
 		self.lasers = []
@@ -131,8 +133,15 @@ class Player(pygame.sprite.Sprite):
 
 		self.rect = tuple(self.rect)
 
-	def fire(self, x, y, dx, dy):
+	def fire(self, x, y):
 		print "firing laser..."
+		mouse_pos = pygame.mouse.get_pos()
+		opp = mouse_pos[1] - self.rect[1]
+		adj = mouse_pos[0] - self.rect[0]
+		angle = math.atan2(opp, adj)
+		dx = math.cos(angle)
+		dy = math.sin(angle)
+
 		data = {"sender": str(self.connection.id), "laser": [x, y, dx, dy]}
 		self.sendData(json.dumps(data))
 
@@ -141,9 +150,9 @@ class Player(pygame.sprite.Sprite):
 		print "laser fired..."
 		return laser
 
-
 	def tick(self):
-		pass
+		if self.health <= 0:
+			print "DEAD"
 
 # other player's sprite
 class Enemy(pygame.sprite.Sprite):
@@ -163,21 +172,49 @@ class Enemy(pygame.sprite.Sprite):
 	def tick(self):
 		pass
 
-# laser objects that get shot from players
+# laser objects that get shot player
 class Laser(pygame.sprite.Sprite):
 	def __init__(self, x, y, dx, dy):
 		pygame.sprite.Sprite.__init__(self)
 		self.rect = pygame.Rect((x, y), (10, 10))
+
 		self.image = pygame.image.load('deathstar.png')
 
+		self.speed = 10
 		self.dx = dx
 		self.dy = dy
 
 	def tick(self):
 		self.rect = list(self.rect)
-		self.rect[0] += self.dx
-		self.rect[1] += self.dy
+		self.rect[0] += (self.speed * self.dx)
+		self.rect[1] += (self.speed * self.dy)
 		self.rect = tuple(self.rect)
+
+class EnemyLaser(pygame.sprite.Sprite):
+	def __init__(self, x, y, dx, dy, player):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.image.load('deathstar.png')
+		self.rect = pygame.Rect((x, y), (10, 10))
+
+		self.target = player
+		self.speed = 10
+		self.dx = dx
+		self.dy = dy
+
+	def tick(self):
+		self.rect = list(self.rect)
+		self.rect[0] += (self.speed * self.dx)
+		self.rect[1] += (self.speed * self.dy)
+		self.rect = tuple(self.rect)
+		# detect collision
+		print self.rect
+		print "first"
+		print type(self.target.rect)
+		print "second"
+		if self.rect.colliderect(self.target.rect):
+			print "got it"
+			# print self.target.health
+			# self.target.health -= 50
 
 # class for entire pygame Gamespace
 class GameSpace(object):
@@ -198,13 +235,11 @@ class GameSpace(object):
 		# capture pygame events 
 		for event in pygame.event.get():
 			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_SPACE:
-					# player fires laser
-					# input: (x, y, dx, dy)
-					laser = self.player.fire(self.player.rect[0], self.player.rect[1], 1, 1)
-					self.game_objects.append(laser)
-				else:
-					self.player.move(event.key)
+				self.player.move(event.key)
+			elif event.type == pygame.MOUSEBUTTONDOWN:
+				# player fires laser
+				laser = self.player.fire(self.player.rect[0], self.player.rect[1])
+				self.game_objects.append(laser)
 
 		# get data from server
 		for data in list(reversed(self.player.connection.queue)):
@@ -244,10 +279,13 @@ class GameSpace(object):
 			# receive laser fire from server
 			try:
 				laser_data = data["laser"]
-				laser = Laser(laser_data[0], laser_data[1], laser_data[2], laser_data[3])
+				print data
+				laser = EnemyLaser(laser_data[0], laser_data[1], laser_data[2], laser_data[3], self.player)
 				self.game_objects.append(laser)
+				print laser
 			except KeyError as e:
 				pass
+
 
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
