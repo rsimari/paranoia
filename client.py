@@ -130,11 +130,14 @@ class Player(pygame.sprite.Sprite):
 		self.game = game
 		self.health = 100
 		self.player_num = 0
-		self.rect = pygame.Rect(pos, (75, 50))
+		self.rect = pygame.Rect(pos, (75, 75))
 		self.rect.center = pos
 		self.image = pygame.image.load('jet.png')
 		self.image = pygame.transform.scale(self.image, self.rect.size)
 		self.lasers = []
+
+		self.originalImage = self.image
+		self.originalRect = self.rect
 
 	def sendData(self, data):
 		if self.connection != None:
@@ -163,10 +166,11 @@ class Player(pygame.sprite.Sprite):
 
 	def fire(self, x, y):
 		print "firing laser..."
-		mouse_pos = pygame.mouse.get_pos()
+		'''mouse_pos = pygame.mouse.get_pos()
 		opp = mouse_pos[1] - self.rect.centery
-		adj = mouse_pos[0] - self.rect.centerx
-		angle = math.atan2(opp, adj)
+		adj = mouse_pos[0] - self.rect.centerx'''
+		#angle = math.atan2(opp, adj)
+		angle = self.get_angle()
 		dx = math.cos(angle)
 		dy = math.sin(angle)
 
@@ -177,6 +181,15 @@ class Player(pygame.sprite.Sprite):
 		self.lasers.append(laser)
 		return laser
 
+	def get_angle(self):
+		mouse_pos = pygame.mouse.get_pos()
+		opp = mouse_pos[1] - self.rect.centery
+		adj = mouse_pos[0] - self.rect.centerx
+		angle = math.atan2(opp, adj)
+	
+		return angle
+
+
 	def tick(self):
 		if self.health <= 0:
 			# remove player from game
@@ -185,13 +198,24 @@ class Player(pygame.sprite.Sprite):
 			data = {"sender": str(self.connection.id), "del": str(self.connection.id)}
 			self.sendData(json.dumps(data))
 
+		angle = -math.degrees(self.get_angle())
+		#print angle
+		rot_image = pygame.transform.rotate(self.originalImage, angle)
+		rot_rect = self.originalRect.copy()
+		rot_rect.center = rot_image.get_rect().center
+		rot_image = rot_image.subsurface(rot_rect).copy()
+		self.image = rot_image
+		rot_data = {"angle":str(angle)}
+		#self.sendData(json.dumps(rot_data))
+
 # other player's sprite
 class Enemy(pygame.sprite.Sprite):
 	def __init__(self,  _id, rect = [50, 50]):
 		pygame.sprite.Sprite.__init__(self)
-		self.rect = pygame.Rect((rect[0], rect[1]), (100, 100))
+		self.rect = pygame.Rect((rect[0], rect[1]), (75, 75))
 		self.rect.center = tuple(rect)
-		self.image = pygame.image.load('jet.png')
+		self.image = pygame.image.load('enemyjet.png')
+		self.image = pygame.transform.scale(self.image, self.rect.size)
 		self.id = _id
 
 	def move(self, data):
@@ -209,9 +233,10 @@ class Enemy(pygame.sprite.Sprite):
 class Laser(pygame.sprite.Sprite):
 	def __init__(self, x, y, dx, dy, gs):
 		pygame.sprite.Sprite.__init__(self)
-		self.rect = pygame.Rect((x, y), (10, 10))
+		self.rect = pygame.Rect((x, y), (10, 5))
 
 		self.image = pygame.image.load('laser.png')
+		self.image = pygame.transform.scale(self.image, self.rect.size)
 
 		self.speed = 10
 		self.gs = gs
@@ -248,7 +273,6 @@ class EnemyLaser(pygame.sprite.Sprite):
 			# remove laser from game
 			self.gs.game_objects.remove(self)
 
-
 # class for entire pygame Gamespace
 class GameSpace(object):
 	def __init__(self, player, width, height):
@@ -263,13 +287,32 @@ class GameSpace(object):
 		self.player = player
 		self.game_objects.append(self.player)
 		self.enemies = {}
+		self.game_started = 0
+
+		### add text to screen ###
+		self.draw_text = 1
+		self.waiting_font = pygame.font.SysFont(None, 48)
+		self.waiting_text = self.waiting_font.render('Waiting for more players...', True, (255,0,0), (0,0,0))
+		self.waiting_textrect = self.waiting_text.get_rect()
+		self.waiting_textrect.centerx = self.width / 2
+		self.waiting_textrect.centery = self.height / 2
+		#text_obj = {}
+
+		### add health to screen ###
+		self.health_font = pygame.font.SysFont(None, 25)
+		self.health_text = self.health_font.render('Health: 100', True , (255,255,255), (0,0,0))
+		self.health_rect = self.health_text.get_rect()
+		self.health_rect.centerx = self.width / 2
+		self.health_rect.centery = 20
+
+		
 
 	def update(self):
 		# capture pygame events 
 		for event in pygame.event.get():
-			if event.type == pygame.KEYDOWN:
+			if event.type == pygame.KEYDOWN and self.game_started:
 				self.player.move(event.key)
-			elif event.type == pygame.MOUSEBUTTONDOWN:
+			elif event.type == pygame.MOUSEBUTTONDOWN and self.game_started:
 				# player fires laser
 				laser = self.player.fire(self.player.rect.centerx, self.player.rect.centery)
 				self.game_objects.append(laser)
@@ -293,6 +336,14 @@ class GameSpace(object):
 				del self.enemies[str(_id)]
 			except KeyError as e:
 				pass
+	
+			# see if game has enough players to start
+			try:
+				self.game_started = int(data["start"])
+				self.draw_text = 0
+				print "!!!!!!!!!", self.game_started
+			except KeyError as e:
+				pass
 
 			# received state from server
 			try:
@@ -301,7 +352,7 @@ class GameSpace(object):
 				for _id, pos in state.iteritems():
 					if _id in self.enemies and _id is not self.player.connection.id:
 						# moves enemy to position based on state sent from server
-						self.enemies[_id].rect = pos
+						self.enemies[_id].rect.center = pos
 					elif _id != self.player.connection.id:
 						e = Enemy(_id, pos)
 						self.enemies[_id] = e
@@ -321,9 +372,15 @@ class GameSpace(object):
 				pass
 
 
+
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
 			obj.tick()
+
+		# update health display
+		health_rep = 'Health: ' + str(self.player.health)
+		self.health_text = self.health_font.render(health_rep, True , (255,255,255), (0,0,0))
+
 
 		# clear screen
 		self.screen.fill(self.black)
@@ -332,7 +389,13 @@ class GameSpace(object):
 		for obj in self.game_objects:
 			self.screen.blit(obj.image, obj.rect)
 
+		if self.draw_text:
+			self.screen.blit(self.waiting_text, self.waiting_textrect)
+
+		self.screen.blit(self.health_text, self.health_rect)
+
 		pygame.display.flip()
+
 
 class Game(object):
 	def __init__(self):

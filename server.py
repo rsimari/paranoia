@@ -13,6 +13,16 @@ class PlayerConnection(Protocol):
 	def connectionMade(self):
 		print "player connection made"
 
+	def checkStart(self):
+		count = 0
+		for connect in self.init_connection.player_map:
+			if connect:
+				count += 1
+		# waiting for 4 players
+		if count == 4:
+			data = {"start":"1", "sender":"0"}
+			self.init_connection.conn_controller.broadcast(data)
+
 	def dataReceived(self, data):
 		data_set = data.split("____")
 		print data_set
@@ -25,9 +35,10 @@ class PlayerConnection(Protocol):
 					pos = data["init"]
 					self.init_connection.conn_controller.addPlayer(_id, pos)
 					self.init_connection.conn_controller.broadcastState()
+					self.checkStart()
 					
 				except KeyError as e:
-					pass	
+					pass
 
 				try:
 					# player got updated
@@ -52,6 +63,11 @@ class PlayerConnection(Protocol):
 		# drop connection on this side
 		self.transport.loseConnection()
 		self.init_connection.conn_controller.stopListeningPort(self.port)
+		# remove player from state
+		del self.init_connection.conn_controller.player_pos[str(self.port)]
+		# remove player from player_map
+		index = self.init_connection.port_player_map[self.port]
+		self.init_connection.player_map[index-1] = 0
 
 class PlayerConnectionFactory(Factory):
 	def __init__(self, port, init):
@@ -97,9 +113,11 @@ class PlayerConnectionController(object):
 		self.ports.append(port)
 
 	def broadcast(self, decoded_data):
+		print "!!!!!!!!", self.conn_in_use
 		for conn in self.conn_in_use:
 			try:
 				if conn.port != int(decoded_data["sender"]):
+					print decoded_data
 					try:
 						conn.transport.write(json.dumps(decoded_data) + "____")
 					except AttributeError as e:
@@ -116,11 +134,22 @@ class InitConnection(Protocol):
 	def __init__(self):
 		self.available_ports = [40123, 41123, 42123, 41103, 42103]
 		self.conn_controller = PlayerConnectionController()
-		self.player_count = 0
+		self.port_player_map = {42103:1, 41103:2, 42123:3, 41123:4, 40123:5}
+		self.player_map = [0,0,0,0]
+		self.player_num = 0
 
 	def connectionMade(self):
 		print "new player found!"
-		self.player_count += 1
+		count = 0
+		for spot in self.player_map:
+			count += 1	
+			if not spot:
+				self.player_num = count
+				self.player_map[count-1] = 1
+				break
+		if not self.player_num:
+			self.player_num = 5
+				
 		
 		# check for more open ports
 		if len(self.available_ports) < 1:
@@ -138,7 +167,7 @@ class InitConnection(Protocol):
 		self.conn_controller.newListeningPort([port, new_port])
 
 		# send port to player
-		data = {"port": str(new_port), "player_num": str(self.player_count)}
+		data = {"port": str(new_port), "player_num": str(self.player_num)}
 		self.transport.write(json.dumps(data))
 		self.available_ports.pop()
 
