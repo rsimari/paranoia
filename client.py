@@ -131,13 +131,14 @@ class Player(pygame.sprite.Sprite):
 
 		self.rect = tuple(self.rect)
 
-	def fire(self, pos, dx, dy):
+	def fire(self, x, y, dx, dy):
 		print "firing laser..."
-		data = {"sender": str(self.connection.id), "laser": [pos[0], pos[1], dx, dy]}
+		data = {"sender": str(self.connection.id), "laser": [x, y, dx, dy]}
 		self.sendData(json.dumps(data))
 
-		laser = Laser(pos[:2], dx, dy)
+		laser = Laser(x, y, dx, dy)
 		self.lasers.append(laser)
+		print "laser fired..."
 		return laser
 
 
@@ -164,17 +165,19 @@ class Enemy(pygame.sprite.Sprite):
 
 # laser objects that get shot from players
 class Laser(pygame.sprite.Sprite):
-	def __init__(self, rect, dx, dy):
+	def __init__(self, x, y, dx, dy):
 		pygame.sprite.Sprite.__init__(self)
-		self.rect = pygame.Rect(tuple(rect[:2]), (10, 10))
+		self.rect = pygame.Rect((x, y), (10, 10))
 		self.image = pygame.image.load('deathstar.png')
 
 		self.dx = dx
 		self.dy = dy
 
 	def tick(self):
-		self.rect[0] += dx
-		self.rect[1] += dy
+		self.rect = list(self.rect)
+		self.rect[0] += self.dx
+		self.rect[1] += self.dy
+		self.rect = tuple(self.rect)
 
 # class for entire pygame Gamespace
 class GameSpace(object):
@@ -197,8 +200,8 @@ class GameSpace(object):
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_SPACE:
 					# player fires laser
-					# (x, y), dx, dy
-					laser = self.player.fire((0,0), 1, 1)
+					# input: (x, y, dx, dy)
+					laser = self.player.fire(self.player.rect[0], self.player.rect[1], 1, 1)
 					self.game_objects.append(laser)
 				else:
 					self.player.move(event.key)
@@ -239,7 +242,12 @@ class GameSpace(object):
 			self.player.connection.queue.pop()
 
 			# receive laser fire from server
-
+			try:
+				laser_data = data["laser"]
+				laser = Laser(laser_data[0], laser_data[1], laser_data[2], laser_data[3])
+				self.game_objects.append(laser)
+			except KeyError as e:
+				pass
 
 		# call tick() on each object that updates their data/location
 		for obj in self.game_objects:
