@@ -178,7 +178,7 @@ class Laser(pygame.sprite.Sprite):
 		pygame.sprite.Sprite.__init__(self)
 		self.rect = pygame.Rect((x, y), (10, 10))
 
-		self.image = pygame.image.load('deathstar.png')
+		self.image = pygame.image.load('laser.png')
 
 		self.speed = 10
 		self.dx = dx
@@ -191,7 +191,7 @@ class Laser(pygame.sprite.Sprite):
 class EnemyLaser(pygame.sprite.Sprite):
 	def __init__(self, x, y, dx, dy, player):
 		pygame.sprite.Sprite.__init__(self)
-		self.image = pygame.image.load('deathstar.png')
+		self.image = pygame.image.load('laser.png')
 		self.rect = pygame.Rect((x, y), (10, 10))
 
 		self.target = player
