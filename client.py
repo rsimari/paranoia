@@ -21,7 +21,7 @@ class GameConnection(Protocol):
 
 	def connectionMade(self):
 		print "connected with game server"
-		self.joinGame([0,0])
+		self.joinGame([50,50])
 		self.game.start()
 
 	def joinGame(self, rect):
@@ -29,6 +29,7 @@ class GameConnection(Protocol):
 		self.transport.write(json.dumps(data) + "____")
 
 	def dataReceived(self, data):
+		print data
 		for d in data.split("____")[:-1]:
 			d = json.loads(d)
 			try:
@@ -100,12 +101,14 @@ class InitConnectionFactory(Factory):
 
 # the main players sprite
 class Player(pygame.sprite.Sprite):
-	def __init__(self, game, pos = (0, 0)):
+	def __init__(self, game, gs, pos = (50, 50)):
 		pygame.sprite.Sprite.__init__(self)
 		self.connection = None
+		self.gs = gs
 		self.game = game
 		self.health = 100
 		self.rect = pygame.Rect(pos, (100, 100))
+		self.rect.center = pos
 		self.image = pygame.image.load('deathstar.png')
 		self.lasers = []
 
@@ -146,26 +149,32 @@ class Player(pygame.sprite.Sprite):
 		data = {"sender": str(self.connection.id), "laser": [x, y, dx, dy]}
 		self.sendData(json.dumps(data))
 
-		laser = Laser(x, y, dx, dy)
+		laser = Laser(x, y, dx, dy, self.gs)
 		self.lasers.append(laser)
 		return laser
 
 	def tick(self):
 		if self.health <= 0:
+			# remove player from game
 			print "DEAD"
+			self.gs.game_objects.remove(self)
+			data = {"sender": str(self.connection.id), "del": str(self.connection.id)}
+			self.sendData(json.dumps(data))
 
 # other player's sprite
 class Enemy(pygame.sprite.Sprite):
-	def __init__(self,  _id, rect = [0, 0]):
+	def __init__(self,  _id, rect = [50, 50]):
 		pygame.sprite.Sprite.__init__(self)
-		self.rect = pygame.Rect(tuple(rect[:2]), (100, 100))
+		self.rect = pygame.Rect((rect[0], rect[1]), (100, 100))
+		self.rect.center = tuple(rect)
 		self.image = pygame.image.load('deathstar.png')
 		self.id = _id
 
 	def move(self, data):
 		try:
 			pos = data["position"]
-			self.rect = tuple(pos)
+			self.rect.centerx = pos[0]
+			self.rect.centery = pos[1]
 		except KeyError as e:
 			pass
 
@@ -174,27 +183,33 @@ class Enemy(pygame.sprite.Sprite):
 
 # laser objects that get shot player
 class Laser(pygame.sprite.Sprite):
-	def __init__(self, x, y, dx, dy):
+	def __init__(self, x, y, dx, dy, gs):
 		pygame.sprite.Sprite.__init__(self)
 		self.rect = pygame.Rect((x, y), (10, 10))
 
 		self.image = pygame.image.load('laser.png')
 
 		self.speed = 10
+		self.gs = gs
 		self.dx = dx
 		self.dy = dy
 
 	def tick(self):
 		self.rect.centerx += (self.speed * self.dx)
 		self.rect.centery += (self.speed * self.dy)
+		# detect collision
+		for _id, e in self.gs.enemies.iteritems():
+			if self.rect.colliderect(e.rect):
+				self.gs.game_objects.remove(self)
 
 class EnemyLaser(pygame.sprite.Sprite):
-	def __init__(self, x, y, dx, dy, player):
+	def __init__(self, x, y, dx, dy, player, gs):
 		pygame.sprite.Sprite.__init__(self)
 		self.image = pygame.image.load('laser.png')
 		self.rect = pygame.Rect((x, y), (10, 10))
 
 		self.target = player
+		self.gs = gs
 		self.speed = 10
 		self.dx = dx
 		self.dy = dy
@@ -205,9 +220,10 @@ class EnemyLaser(pygame.sprite.Sprite):
 
 		# detect collision
 		if self.rect.colliderect(self.target.rect):
-			print self.target.health
 			self.target.health -= 10
 			# remove laser from game
+			self.gs.game_objects.remove(self)
+
 
 # class for entire pygame Gamespace
 class GameSpace(object):
@@ -273,7 +289,7 @@ class GameSpace(object):
 			try:
 				laser_data = data["laser"]
 				print data
-				laser = EnemyLaser(laser_data[0], laser_data[1], laser_data[2], laser_data[3], self.player)
+				laser = EnemyLaser(laser_data[0], laser_data[1], laser_data[2], laser_data[3], self.player, self)
 				self.game_objects.append(laser)
 				print laser
 			except KeyError as e:
@@ -296,10 +312,12 @@ class GameSpace(object):
 class Game(object):
 	def __init__(self):
 		self.init_port = 40103
-		self.player = Player(self)
+		self.gs = None
+		self.player = Player(self, self.gs)
 
 	def start(self):
 		self.gs = GameSpace(self.player)
+		self.player.gs = self.gs
 		pygame.key.set_repeat(1, 10)
 		lc = LoopingCall(self.gs.update)
 		lc.start(0.0166)
