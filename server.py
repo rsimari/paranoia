@@ -25,6 +25,7 @@ class PlayerConnection(Protocol):
 					pos = data["init"]
 					self.init_connection.conn_controller.addPlayer(_id, pos)
 					self.init_connection.conn_controller.broadcastState()
+					
 				except KeyError as e:
 					pass	
 
@@ -115,6 +116,7 @@ class InitConnection(Protocol):
 	def __init__(self):
 		self.available_ports = [40123, 41123, 42123, 41103, 42103]
 		self.conn_controller = PlayerConnectionController()
+		self.player_count = 0
 
 	def connectionMade(self):
 		print "new player found!"
@@ -135,7 +137,7 @@ class InitConnection(Protocol):
 		self.conn_controller.newListeningPort([port, new_port])
 
 		# send port to player
-		data = {"port": str(new_port)}
+		data = {"port": str(new_port), "player_num": str(self.player_count)}
 		self.transport.write(json.dumps(data))
 		self.available_ports.pop()
 
