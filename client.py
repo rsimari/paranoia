@@ -202,11 +202,12 @@ class EnemyLaser(pygame.sprite.Sprite):
 	def tick(self):
 		self.rect.centerx += (self.speed * self.dx)
 		self.rect.centery += (self.speed * self.dy)
-		
+
 		# detect collision
 		if self.rect.colliderect(self.target.rect):
 			print self.target.health
-			self.target.health -= 50
+			self.target.health -= 10
+			# remove laser from game
 
 # class for entire pygame Gamespace
 class GameSpace(object):
