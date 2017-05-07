@@ -120,6 +120,7 @@ class InitConnection(Protocol):
 
 	def connectionMade(self):
 		print "new player found!"
+		self.player_count++
 		
 		# check for more open ports
 		if len(self.available_ports) < 1:
