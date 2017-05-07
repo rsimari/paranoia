@@ -261,6 +261,7 @@ class Game(object):
 
 	def start(self):
 		self.gs = GameSpace(self.player)
+		pygame.key.set_repeat(1, 10)
 		lc = LoopingCall(self.gs.update)
 		lc.start(0.0166)
 
