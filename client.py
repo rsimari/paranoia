@@ -14,14 +14,25 @@ log.startLogging(sys.stdout)
 
 # connection for sending data for multiplayer game
 class GameConnection(Protocol):
-	def __init__(self, _id, game):
+	def __init__(self, _id, player):
 		self.id = _id
-		self.game = game
+		self.player = player
+		self.game = player.game
 		self.queue = []
 
 	def connectionMade(self):
 		print "connected with game server"
-		self.joinGame([50,50])
+		if self.player.player_num == 1:
+			self.joinGame([50, 50])
+		elif self.player.player_num == 2:
+			self.joinGame([self.game.gs.width - 50, self.game.gs.height - 50])
+		elif self.player.player_num == 3:
+			self.joinGame([self.game.gs.width - 50, 50])
+		elif self.player.player_num == 3:
+			self.joinGame([50, self.game.gs.height - 50])
+		else: 
+			self.joinGame([self.game.gs.width/2, self.game.gs.height/2])
+
 		self.game.start()
 
 	def joinGame(self, rect):
@@ -43,8 +54,8 @@ class GameConnection(Protocol):
 		self.transport.write(data + "____")
 
 class GameConnectionFactory(Factory):
-	def __init__(self, _id, game):
-		self.connection = GameConnection(_id, game)
+	def __init__(self, _id, player):
+		self.connection = GameConnection(_id, player)
 
 	def buildProtocol(self, addr):
 		return self.connection
@@ -73,7 +84,8 @@ class InitConnection(Protocol):
 		except KeyError as e:
 			pass
 		# receives port to connect to and connects to that port for game data
-		conn = GameConnectionFactory(data["port"], self.player.game)
+		self.player.player_num = data["player_num"]
+		conn = GameConnectionFactory(data["port"], self.player)
 		self.player.connection = conn.connection
 		# reactor.connectTCP("ash.campus.nd.edu", int(data["port"]), conn)
 		reactor.connectTCP("localhost", int(data["port"]), conn)
@@ -107,6 +119,7 @@ class Player(pygame.sprite.Sprite):
 		self.gs = gs
 		self.game = game
 		self.health = 100
+		self.player_num
 		self.rect = pygame.Rect(pos, (100, 100))
 		self.rect.center = pos
 		self.image = pygame.image.load('deathstar.png')
@@ -230,7 +243,7 @@ class GameSpace(object):
 	def __init__(self, player):
 		pygame.init()
 		# set size of window for game
-		self.size = self.width, self.height = 640, 480
+		self.size = self.width, self.height = 800, 500
 		# set clear color
 		self.black = 0, 0, 0
 		self.screen = pygame.display.set_mode(self.size)
@@ -253,6 +266,7 @@ class GameSpace(object):
 		# get data from server
 		for data in list(reversed(self.player.connection.queue)):
 			print data
+
 			# update enemies
 			try:
 				_id = data['sender']
