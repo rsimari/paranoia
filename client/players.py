@@ -12,6 +12,8 @@ from twisted.internet.defer import DeferredQueue
 from twisted.python import log
 log.startLogging(sys.stdout)
 
+from lasers import Laser, EnemyLaser
+
 
 class Player(pygame.sprite.Sprite):
 	def __init__(self, game, gs, pos = (50, 50)):
@@ -57,12 +59,16 @@ class Player(pygame.sprite.Sprite):
 
 	def fire(self, x, y):
 		print "firing laser..."
-		'''mouse_pos = pygame.mouse.get_pos()
-		opp = mouse_pos[1] - self.rect.centery
-		adj = mouse_pos[0] - self.rect.centerx'''
-		#angle = math.atan2(opp, adj)
 		angle = self.get_angle()
 		dx = math.cos(angle)
+		dy = math.sin(angle)
+
+		data = {"sender": str(self.connection.id), "laser": [x, y, dx, dy]}
+		self.sendData(json.dumps(data))
+
+		laser = Laser(x, y, dx, dy, self.gs)
+		self.lasers.append(laser)
+		return laser
 
 	def get_angle(self):
 		mouse_pos = pygame.mouse.get_pos()
@@ -80,6 +86,8 @@ class Player(pygame.sprite.Sprite):
 			self.gs.game_objects.remove(self)
 			data = {"sender": str(self.connection.id), "del": str(self.connection.id)}
 			self.sendData(json.dumps(data))
+			# end game
+			self.gs.game_started = 0
 
 		angle = -math.degrees(self.get_angle())
 		#print angle
@@ -88,8 +96,8 @@ class Player(pygame.sprite.Sprite):
 		rot_rect.center = rot_image.get_rect().center
 		rot_image = rot_image.subsurface(rot_rect).copy()
 		self.image = rot_image
-		rot_data = {"angle":str(angle)}
-		#self.sendData(json.dumps(rot_data))
+		rot_data = {"angle":str(angle), "sender": str(self.connection.id)}
+		self.sendData(json.dumps(rot_data))
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -99,6 +107,8 @@ class Enemy(pygame.sprite.Sprite):
 		self.rect.center = tuple(rect)
 		self.image = pygame.image.load('enemyjet.png')
 		self.image = pygame.transform.scale(self.image, self.rect.size)
+		self.originalImage = self.image
+		self.originalRect = self.rect
 		self.id = _id
 
 	def move(self, data):
@@ -108,6 +118,13 @@ class Enemy(pygame.sprite.Sprite):
 			self.rect.centery = pos[1]
 		except KeyError as e:
 			pass
+
+	def rotate(self, angle):
+		rot_image = pygame.transform.rotate(self.originalImage, angle)
+		rot_rect = self.originalRect.copy()
+		rot_rect.center = rot_image.get_rect().center
+		rot_image = rot_image.subsurface(rot_rect).copy()
+		self.image = rot_image
 
 	def tick(self):
 		pass

@@ -71,6 +71,15 @@ class GameSpace(object):
 			except Exception as e:
 				pass
 
+			# update enemies angles
+			try:
+				_id = data['sender']
+				angle = data["angle"]
+				self.enemies[_id].rotate(float(angle))
+				print "rotating"
+			except Exception as e:
+				pass
+
 			# see if any player left from game and remove them from our screen
 			try:
 				_id = data["del"]
@@ -84,7 +93,6 @@ class GameSpace(object):
 			try:
 				self.game_started = int(data["start"])
 				self.draw_text = 0
-				print "!!!!!!!!!", self.game_started
 			except KeyError as e:
 				pass
 

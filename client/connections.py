@@ -54,7 +54,7 @@ class GameConnection(Protocol):
 		self.transport.write(json.dumps(data) + "____")
 
 	def dataReceived(self, data):
-		print data
+		# print data
 		for d in data.split("____")[:-1]:
 			d = json.loads(d)
 			try:
