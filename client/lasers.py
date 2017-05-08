@@ -37,7 +37,7 @@ class Laser(pygame.sprite.Sprite):
 class EnemyLaser(pygame.sprite.Sprite):
 	def __init__(self, x, y, dx, dy, player, gs):
 		pygame.sprite.Sprite.__init__(self)
-		self.image = pygame.image.load('laser.png')
+		self.image = pygame.image.load('enemylaser.png')
 		self.rect = pygame.Rect((x, y), (15, 5))
 
 		self.target = player
