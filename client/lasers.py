@@ -55,3 +55,4 @@ class EnemyLaser(pygame.sprite.Sprite):
 			self.target.health -= 10
 			# remove laser from game
 			self.gs.game_objects.remove(self)
+			
