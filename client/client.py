@@ -160,7 +160,7 @@ class GameSpace(object):
 		if self.game_ended:
 			self.screen.blit(self.end_text, self.end_rect)
 
-		if self.game_won:
+		if len(self.enemies) == 0 and self.game_started:
 			self.screen.blit(self.win_text, self.win_rect)
 
 		pygame.display.flip()
