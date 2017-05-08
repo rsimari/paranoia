@@ -66,7 +66,7 @@ class Player(pygame.sprite.Sprite):
 		data = {"sender": str(self.connection.id), "laser": [x, y, dx, dy]}
 		self.sendData(json.dumps(data))
 
-		laser = Laser(x, y, dx, dy, self.gs)
+		laser = Laser(x, y, dx, dy, angle, self.gs)
 		self.lasers.append(laser)
 		return laser
 
@@ -91,7 +91,7 @@ class Player(pygame.sprite.Sprite):
 			self.gs.game_started = 0
 			self.gs.game_ended = 1
 
-		angle = -math.degrees(self.get_angle())
+		angle = -math.degrees(self.get_angle())+5
 		#print angle
 		rot_image = pygame.transform.rotate(self.originalImage, angle)
 		rot_rect = self.originalRect.copy()
