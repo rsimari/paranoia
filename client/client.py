@@ -32,7 +32,6 @@ class GameSpace(object):
 		self.enemies = {}
 		self.game_started = 0
 		self.game_ended = 0
-		self.game_won = 0
 
 		### add waiting for players to screen ###
 		self.draw_text = 1

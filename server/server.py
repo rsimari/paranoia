@@ -19,7 +19,7 @@ class PlayerConnection(Protocol):
 			if connect:
 				count += 1
 		# waiting for 4 players
-		if count == 2:
+		if count == 4:
 			data = {"start":"1", "sender":"0"}
 			self.init_connection.conn_controller.broadcast(data)
 
