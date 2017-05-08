@@ -52,7 +52,7 @@ class EnemyLaser(pygame.sprite.Sprite):
 
 		# detect collision
 		if self.rect.colliderect(self.target.rect):
-			self.target.health -= 10
-			# remove laser from game
-			self.gs.game_objects.remove(self)
-			
+			if self.target.health > 0:
+				self.target.health -= 10
+				# remove laser from game
+				self.gs.game_objects.remove(self)

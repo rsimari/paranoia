@@ -31,15 +31,16 @@ class GameSpace(object):
 		self.game_objects.append(self.player)
 		self.enemies = {}
 		self.game_started = 0
+		self.game_ended = 0
+		self.game_won = 0
 
-		### add text to screen ###
+		### add waiting for players to screen ###
 		self.draw_text = 1
 		self.waiting_font = pygame.font.SysFont(None, 48)
 		self.waiting_text = self.waiting_font.render('Waiting for more players...', True, (255,0,0), (0,0,0))
 		self.waiting_textrect = self.waiting_text.get_rect()
 		self.waiting_textrect.centerx = self.width / 2
 		self.waiting_textrect.centery = self.height / 2
-		#text_obj = {}
 
 		### add health to screen ###
 		self.health_font = pygame.font.SysFont(None, 25)
@@ -47,6 +48,19 @@ class GameSpace(object):
 		self.health_rect = self.health_text.get_rect()
 		self.health_rect.centerx = self.width / 2
 		self.health_rect.centery = 20
+
+		### you lost screen ###
+		self.end_font = pygame.font.SysFont(None, 40)
+		self.end_text = self.end_font.render('You Lose!', True , (255,0,0), (0,0,0))
+		self.end_rect = self.end_text.get_rect()
+		self.end_rect.centerx = self.width / 2
+		self.end_rect.centery = self.height / 2
+
+		self.win_font = pygame.font.SysFont(None, 40)
+		self.win_text = self.win_font.render('You Win!', True , (0,255,0), (0,0,0))
+		self.win_rect = self.win_text.get_rect()
+		self.win_rect.centerx = self.width / 2
+		self.win_rect.centery = self.height / 2
 
 		
 
@@ -142,6 +156,12 @@ class GameSpace(object):
 			self.screen.blit(self.waiting_text, self.waiting_textrect)
 
 		self.screen.blit(self.health_text, self.health_rect)
+
+		if self.game_ended:
+			self.screen.blit(self.end_text, self.end_rect)
+
+		if self.game_won:
+			self.screen.blit(self.win_text, self.win_rect)
 
 		pygame.display.flip()
 
