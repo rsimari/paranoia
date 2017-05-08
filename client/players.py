@@ -88,6 +88,7 @@ class Player(pygame.sprite.Sprite):
 			self.sendData(json.dumps(data))
 			# end game
 			self.gs.game_started = 0
+			self.health = 0
 
 		angle = -math.degrees(self.get_angle())
 		#print angle

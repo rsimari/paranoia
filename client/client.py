@@ -115,10 +115,8 @@ class GameSpace(object):
 			# receive laser fire from server
 			try:
 				laser_data = data["laser"]
-				print data
 				laser = EnemyLaser(laser_data[0], laser_data[1], laser_data[2], laser_data[3], self.player, self)
 				self.game_objects.append(laser)
-				print laser
 			except KeyError as e:
 				pass
 
