@@ -28,6 +28,7 @@ class Player(pygame.sprite.Sprite):
 		self.image = pygame.image.load('jet.png')
 		self.image = pygame.transform.scale(self.image, self.rect.size)
 		self.lasers = []
+		self.angle = 0
 
 		self.originalImage = self.image
 		self.originalRect = self.rect
@@ -63,7 +64,7 @@ class Player(pygame.sprite.Sprite):
 		dx = math.cos(angle)
 		dy = math.sin(angle)
 
-		data = {"sender": str(self.connection.id), "laser": [x, y, dx, dy]}
+		data = {"sender": str(self.connection.id), "laser": [x, y, dx, dy], "angle":angle}
 		self.sendData(json.dumps(data))
 
 		laser = Laser(x, y, dx, dy, angle, self.gs)
@@ -91,6 +92,7 @@ class Player(pygame.sprite.Sprite):
 			self.gs.game_started = 0
 			self.gs.game_ended = 1
 
+		
 		angle = -math.degrees(self.get_angle())+5
 		#print angle
 		rot_image = pygame.transform.rotate(self.originalImage, angle)

@@ -51,7 +51,7 @@ class Laser(pygame.sprite.Sprite):
 				self.gs.game_objects.remove(self)
 
 class EnemyLaser(pygame.sprite.Sprite):
-	def __init__(self, x, y, dx, dy, player, gs):
+	def __init__(self, x, y, dx, dy, angle, player, gs):
 		pygame.sprite.Sprite.__init__(self)
 
 		self.rect = pygame.Rect((x, y), (15, 5))
@@ -60,9 +60,11 @@ class EnemyLaser(pygame.sprite.Sprite):
 
 		# rotate image
 		# pass rot in and try this !!!!!
-		rot = math.tan(dy/dx)
-		self.angle = math.degrees(rot)
-		rot_image = pygame.transform.rotate(self.image, self.angle)
+		#rot = math.tan(dx/dy)
+		#self.angle = math.degrees(rot)
+		#print self.angle
+		angle = -math.degrees(angle)
+		rot_image = pygame.transform.rotate(self.image, angle)
 		#rot_rect = self.rect.copy()
 		#rot_rect.center = rot_image.get_rect().center
 		#rot_image = rot_image.subsurface(rot_rect).copy()
