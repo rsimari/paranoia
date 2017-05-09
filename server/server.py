@@ -19,7 +19,7 @@ class PlayerConnection(Protocol):
 			if connect:
 				count += 1
 		# waiting for 4 players
-		if count == 2:
+		if count == 4:
 			data = {"start":"1", "sender":"0"}
 			self.init_connection.conn_controller.broadcast(data)
 
@@ -35,7 +35,7 @@ class PlayerConnection(Protocol):
 					self.init_connection.conn_controller.addPlayer(_id, pos)
 					self.init_connection.conn_controller.broadcastState()
 					self.checkStart()
-					
+
 				except KeyError as e:
 					pass
 
@@ -45,7 +45,7 @@ class PlayerConnection(Protocol):
 					self.init_connection.conn_controller.updatePlayer(_id, pos)
 				except KeyError as e:
 					pass
-				# broadcasts changes to clients	
+				# broadcasts changes to clients
 				self.init_connection.conn_controller.broadcast(data)
 
 	def connectionLost(self, reason):
@@ -139,25 +139,26 @@ class InitConnection(Protocol):
 		print "new player found!"
 		count = 0
 		for spot in self.player_map:
-			count += 1	
+			count += 1
 			if not spot:
 				self.player_num = count
 				self.player_map[count-1] = 1
 				break
 		if not self.player_num:
 			self.player_num = 5
-				
-		
+
+
 		# check for more open ports
 		if len(self.available_ports) < 1:
 			print "no available ports"
 			data = {"port": "-1"}
 			self.transport.write(json.dumps(data))
-			return 
+			return
 		# assign whoever connected to this a port
 		new_port = self.available_ports[len(self.available_ports) - 1]
 
 		# start listening on the port
+		print 'here'
 		new_conn = PlayerConnectionFactory(new_port, self)
 		self.conn_controller.addConnection(new_conn.connection)
 		port = reactor.listenTCP(new_port, new_conn)
