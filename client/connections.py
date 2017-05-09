@@ -80,6 +80,9 @@ class GameConnectionFactory(Factory):
 	def clientConnectionLost(self, connector, reason):
 		pass
 
+	def clientConnectionFailed(self, connector, reason):
+		pass
+
 # connection for initial connect to server
 class InitConnection(Protocol):
 	def __init__(self, player):

@@ -83,7 +83,6 @@ class Player(pygame.sprite.Sprite):
 	def tick(self):
 		if self.health <= 0:
 			# remove player from game
-			print "DEAD"
 			self.gs.game_objects.remove(self)
 			data = {"sender": str(self.connection.id), "del": str(self.connection.id)}
 			self.sendData(json.dumps(data))
@@ -94,7 +93,6 @@ class Player(pygame.sprite.Sprite):
 
 		
 		angle = -math.degrees(self.get_angle())+5
-		#print angle
 		rot_image = pygame.transform.rotate(self.originalImage, angle)
 		rot_rect = self.originalRect.copy()
 		rot_rect.center = rot_image.get_rect().center

@@ -75,7 +75,6 @@ class GameSpace(object):
 
 		# get data from server
 		for data in list(reversed(self.player.connection.queue)):
-			print data
 
 			# update enemies
 			try:
@@ -89,7 +88,6 @@ class GameSpace(object):
 				_id = data['sender']
 				angle = data["angle"]
 				self.enemies[_id].rotate(float(angle))
-				print "rotating"
 			except Exception as e:
 				pass
 
@@ -112,7 +110,6 @@ class GameSpace(object):
 			# received state from server
 			try:
 				state = data["state"]
-				print state
 				for _id, pos in state.iteritems():
 					if _id in self.enemies and _id is not self.player.connection.id:
 						# moves enemy to position based on state sent from server
@@ -179,7 +176,7 @@ class Game(object):
 		lc.start(0.0166)
 
 	def connect(self):
-		reactor.connectTCP("localhost", self.init_port, InitConnectionFactory(self.player))
+		reactor.connectTCP("newt.campus.nd.edu", self.init_port, InitConnectionFactory(self.player))
 		# reactor.connectTCP("ash.campus.nd.edu", self.init_port, InitConnectionFactory(self.player))
 
 
