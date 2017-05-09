@@ -24,9 +24,6 @@ class Laser(pygame.sprite.Sprite):
 		# rotate image
 		self.angle = -math.degrees(rot)
 		rot_image = pygame.transform.rotate(self.image, self.angle)
-		#rot_rect = self.rect.copy()
-		#rot_rect.center = rot_image.get_rect().center
-		#rot_image = rot_image.subsurface(rot_rect).copy()
 		self.image = rot_image
 		self.rect = self.image.get_rect()
 		self.rect.centerx = x
@@ -38,11 +35,7 @@ class Laser(pygame.sprite.Sprite):
 		self.dy = dy
 
 	def tick(self):
-		#ngl = math.radians(self.angle + 90)
-		#self.rect.centerx += (self.speed * math.sin(ngl))
-		#self.rect.centery += (self.speed * math.cos(ngl))
-		
-		# no longer need to pass dx dy
+
 		self.rect.centerx += (self.speed * self.dx)
 		self.rect.centery += (self.speed * self.dy)
 		# detect collision
@@ -59,15 +52,8 @@ class EnemyLaser(pygame.sprite.Sprite):
 		self.image = pygame.transform.scale(self.image, self.rect.size)
 
 		# rotate image
-		# pass rot in and try this !!!!!
-		#rot = math.tan(dx/dy)
-		#self.angle = math.degrees(rot)
-		#print self.angle
 		angle = -math.degrees(angle)
 		rot_image = pygame.transform.rotate(self.image, angle)
-		#rot_rect = self.rect.copy()
-		#rot_rect.center = rot_image.get_rect().center
-		#rot_image = rot_image.subsurface(rot_rect).copy()
 		self.image = rot_image
 		self.rect = self.image.get_rect()
 		self.rect.centerx = x
@@ -81,11 +67,7 @@ class EnemyLaser(pygame.sprite.Sprite):
 		self.dy = dy
 
 	def tick(self):
-		#ngl = math.radians(self.angle + 90)
-		#self.rect.centerx += (self.speed * math.sin(ngl))
-		#self.rect.centery += (self.speed * math.cos(ngl))
 
-		# no longer need to pass dx dy
 		self.rect.centerx += (self.speed * self.dx)
 		self.rect.centery += (self.speed * self.dy)
 
